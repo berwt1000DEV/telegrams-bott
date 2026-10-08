@@ -1,6 +1,8 @@
 Python
 import logging
 import os
+import threading
+from flask import Flask
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -15,17 +17,29 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
-# Çevresel değişkenlerden güvenli bir şekilde alıyoruz (Render'a ekleyeceğiz)
-TOKEN = os.environ.get("8991681685:AAGzmx3aJNXNKzN6PSchBR0HcBq0NTJjRjg")
-# Admin ID'sini sayıya çeviriyoruz (Birden fazla admin için virgülle ayırıp liste yapabilirsin)
-ADMIN_ID = int(os.environ.get("8259166485", "0"))
-CHANNEL_ID = os.environ.get("1004385231162")
-
+TOKEN = os.environ.get("BOT_TOKEN")
+ADMIN_ID = int(os.environ.get("ADMIN_ID", "0"))
+CHANNEL_ID = os.environ.get("CHANNEL_ID")
 YASAKLI_KELIMELER = ["küfür1", "küfür2", "dolandırıcı", "hacklink"]
+
+# --- RENDER'IN İSTEDİĞİ MİNİ WEB SUNUCUSU ---
+app_web = Flask(__name__)
+
+
+@app_web.route("/")
+def home():
+  return "Bot aktif ve çalışıyor!"
+
+
+def run_web():
+  port = int(os.environ.get("PORT", 10000))
+  app_web.run(host="0.0.0.0", port=port)
+
+# ---------------------------------------------
 
 
 async def yaz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-  if update.effective_user.id != 8259166485:
+  if update.effective_user.id != ADMIN_ID:
     return
 
   message_text = " ".join(context.args)
@@ -75,8 +89,12 @@ def main():
     print("HATA: BOT_TOKEN bulunamadı!")
     return
 
-  app = ApplicationBuilder().token(TOKEN).build()
+  # Web sunucusunu arka planda (ayrı bir thread'de) başlatıyoruz
+  t = threading.Thread(target=run_web)
+  t.start()
 
+  # Telegram botunu başlatıyoruz
+  app = ApplicationBuilder().token(TOKEN).build()
   app.add_handler(CommandHandler("yaz", yaz))
   app.add_handler(
       MessageHandler(
