@@ -1,4 +1,3 @@
-Python
 import logging
 import os
 import threading
@@ -89,11 +88,9 @@ def main():
     print("HATA: BOT_TOKEN bulunamadı!")
     return
 
-  # Web sunucusunu arka planda (ayrı bir thread'de) başlatıyoruz
   t = threading.Thread(target=run_web)
   t.start()
 
-  # Telegram botunu başlatıyoruz
   app = ApplicationBuilder().token(TOKEN).build()
   app.add_handler(CommandHandler("yaz", yaz))
   app.add_handler(
